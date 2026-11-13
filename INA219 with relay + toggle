@@ -1,0 +1,101 @@
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+#include <Adafruit_INA219.h>
+
+// ---------- Settings you can change ----------
+#define TOGGLE_PIN    2       // toggle switch between D2 and GND
+#define RELAY_PIN     7       // relay module IN1
+#define RELAY_ON      LOW     // most modules turn ON with LOW. If backwards, swap LOW/HIGH
+#define RELAY_OFF     HIGH
+#define TRIP_LIMIT_MA 700.0   // trip above this current
+
+Adafruit_SSD1306 display(128, 64, &Wire, -1);
+Adafruit_INA219 ina219;
+
+bool tripped = false;
+
+void setup() {
+  Serial.begin(115200);
+
+  pinMode(TOGGLE_PIN, INPUT_PULLUP);
+  pinMode(RELAY_PIN, OUTPUT);
+  digitalWrite(RELAY_PIN, RELAY_OFF);   // start with load OFF
+
+  if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
+    Serial.println("OLED not found");
+    while (1);
+  }
+  display.setTextColor(SSD1306_WHITE);
+
+  if (!ina219.begin()) {
+    Serial.println("INA219 not found");
+    display.clearDisplay();
+    display.setCursor(0, 0);
+    display.println("INA219 not found");
+    display.display();
+    while (1);
+  }
+}
+
+void loop() {
+  float voltage = ina219.getBusVoltage_V();
+  float current = ina219.getCurrent_mA();
+  if (current < 0) current = 0;
+
+  bool switchOn = (digitalRead(TOGGLE_PIN) == LOW);
+  const char* status;
+
+  if (!switchOn) {
+    digitalWrite(RELAY_PIN, RELAY_OFF);
+    tripped = false;
+    status = "OFF";
+  }
+  else if (tripped) {
+    digitalWrite(RELAY_PIN, RELAY_OFF);
+    status = "TRIPPED";
+  }
+  else {
+    digitalWrite(RELAY_PIN, RELAY_ON);
+    status = "ON";
+
+    if (current > TRIP_LIMIT_MA) {
+      digitalWrite(RELAY_PIN, RELAY_OFF);
+      tripped = true;
+      status = "TRIPPED";
+    }
+  }
+
+  display.clearDisplay();
+  display.setTextSize(1);
+
+  display.setCursor(0, 0);
+  display.print("Status: ");
+  display.println(status);
+
+  display.setCursor(0, 20);
+  display.print("V: ");
+  display.print(voltage, 2);
+  display.println(" V");
+
+  display.setCursor(0, 32);
+  display.print("I: ");
+  display.print(current, 0);
+  display.println(" mA");
+
+  display.setCursor(0, 44);
+  display.print("P: ");
+  display.print(voltage * current, 0);
+  display.println(" mW");
+
+  display.display();
+
+  Serial.print(status);
+  Serial.print("  ");
+  Serial.print(voltage, 2);
+  Serial.print(" V  ");
+  Serial.print(current, 0);
+  Serial.println(" mA");
+
+  delay(200);
+}
