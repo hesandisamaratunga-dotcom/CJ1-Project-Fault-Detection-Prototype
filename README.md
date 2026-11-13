@@ -2,9 +2,9 @@
 
 Elective Project 1 (CJ1), B.Sc. Information Engineering, HAW Hamburg
 
-Supervisor: Prof.Dr. Frerk Haase
-Team: Hesandi Samarathunga, Rithika Ganeshan, Pansiluni Samarakoon
-Start date: September 2026
+- Supervisor: Prof.Dr. Frerk Haase
+- Team: Hesandi Samarathunga, Rithika Ganeshan, Pansiluni Samarakoon
+- Start date: September 2026
 
 # Project description
 
